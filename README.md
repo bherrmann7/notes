@@ -1,20 +1,14 @@
 # notes
 
-FIXME
+## Notes - a simple wiki
+
+Note is a simple wiki.  The idea is to collect all content as
+Markdown.  To store it all in a git repo.  And to have a good search
+function.  Together this should serve as a baseline place to keep
+simple engineering documents.
 
 ## Getting Started
 
 1. Start the application: `lein run`
-2. Go to [localhost:8080](http://localhost:8080/) to see: `Hello World!`
-3. Read your app's source code at src/notes/service.clj. Explore the docs of functions
-   that define routes and responses.
-4. Run your app's tests with `lein test`. Read the tests at test/notes/service_test.clj.
-5. Learn more! See the [Links section below](#links).
+2. Go to [localhost:8080](http://localhost:8080/) to see: The welcome page
 
-## Configuration
-
-To configure logging see config/logback.xml. By default, the app logs to stdout and logs/.
-To learn more about configuring Logback, read its [documentation](http://logback.qos.ch/documentation.html).
-
-## Links
-* [Other examples](https://github.com/pedestal/samples)
