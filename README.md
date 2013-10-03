@@ -1,8 +1,7 @@
-# notes
 
-## Notes - a simple wiki
+# Notes - a simple wiki
 
-Notes is a simple wiki.  The idea is to
+### Notes is a simple wiki.  The idea is to
 
 - collect all content as Markdown.  
 - implment search on documents
@@ -12,13 +11,14 @@ Notes is a simple wiki.  The idea is to
 Together this should serve as a baseline place to keep simple
 engineering documents.  
 
-## Getting Started
+### Getting Started
 
 1. Start the application: `lein run`
 2. Go to [localhost:8080](http://localhost:8080/) to see: The welcome page
 
 
-## History
+### History
 
 This was originally a Noir project, and I have migrated to pedestal
+
 
