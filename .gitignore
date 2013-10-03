@@ -1,0 +1,7 @@
+target/
+tmp/
+logs/
+.DS_Store
+.idea
+deploy.*
+wiki/
