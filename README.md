@@ -19,6 +19,7 @@ engineering documents.
 
 ### History
 
-This was originally a Noir project, and I have migrated to pedestal
+This was originally a Noir project, and I have migrated to pedestal.io
+
 
 
