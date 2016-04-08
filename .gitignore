@@ -7,4 +7,6 @@ wiki/
 notes.iml
 .lein-repl-history
 .nrepl-port
-notes.war 
+notes.war
+pom.xml
+
