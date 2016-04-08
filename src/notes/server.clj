@@ -12,7 +12,8 @@
                   (constantly (bootstrap/create-server (merge service/service opts)))))
 
 (defn -main [& args]
-  (create-server)
+  (notes.welcome/notes-dir-set (first args))
+  (create-server {:notes-dir (first args)})
   (bootstrap/start service-instance))
 
 

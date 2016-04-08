@@ -5,28 +5,52 @@
             )
   (:import org.pegdown.PegDownProcessor))
 
+(def notes-dir)
+
+(defn notes-dir-set [dir]
+  (def notes-dir dir)
+  )
+
 (defn markup [text]
   (clojure.string/replace (.markdownToHtml (PegDownProcessor.) (if text text ""))
-    #"(?:[A-Z][a-z]+){2,}" "<a href=\"/$0\">$0</a>"))
-
-
+                          #"(?:[A-Z][a-z]+){2,}" "<a href=\"/$0\">$0</a>"))
 (defn fetch-file [file]
   (let [
-         env-dir (System/getenv "NOTES_GIT_DIR")
-         base-dir (new java.io.File (if env-dir env-dir "wiki/"))
-         pageFile (new java.io.File base-dir file)]
+        env-dir (System/getenv "NOTES_GIT_DIR")
+        base-dir (new java.io.File (if notes-dir notes-dir (if env-dir env-dir "wiki/")))
+        pageFile (new java.io.File base-dir file)]
     (if (.exists pageFile) (do
                              (println (str "slurping " pageFile))
                              (slurp pageFile))
-      (str "\nNo file found on disk.  Looked at: " pageFile))) )
+                           (str "\nNo file found on disk.  Looked at: " pageFile)))
+  )
+
+(defn file-to-wiki [file]
+  (let [m (.getName file)
+        no-wd (.replaceAll m ".wd" "")
+        ]
+    (str  no-wd "<br>")
+    )
+  )
+
+(defn fetch-dir []
+  (let [
+        env-dir (System/getenv "NOTES_GIT_DIR")
+        base-dir (new java.io.File (if notes-dir notes-dir (if env-dir env-dir "wiki/")))
+        ]
+    ; [example link](http://example.com/)
+    (clojure.string/join (map file-to-wiki (.listFiles base-dir)))
+    ))
 
 (defn fetch-content [title]
-  (fetch-file (str title ".wd")))
+  (if (= "Directory" title)
+    (fetch-dir)
+    (fetch-file (str title ".wd"))))
 
 (defn save-content [title body]
   (let [env-dir (System/getenv "NOTES_GIT_DIR")
-        base-dir (new java.io.File (if env-dir env-dir "wiki/"))
-        disk-file (str title ".wd" )
+        base-dir (new java.io.File (if notes-dir notes-dir (if env-dir env-dir "wiki/")))
+        disk-file (str title ".wd")
         pageFile (new java.io.File base-dir disk-file)
         ]
     (if-not (.exists base-dir) (.mkdirs base-dir))
@@ -62,6 +86,7 @@
                <div class='nav-collapse collapse'>
                <ul class='nav'>
                <li class='active'><a href='" (mk-link request "/") "'>Home</a></li>
+               <li ><a href='" (mk-link request "/Directory") "'>Directory</a></li>
                </ul>
                <ul class='nav pull-right'>
                 <li class='pull-right'><a href='" (mk-link request "/_basic") "'>Basic</a></li>
@@ -78,7 +103,7 @@
 
 (defn welcome [request]
   (clojure.pprint/pprint request)
-  {:status 302 :headers {"Location" (mk-link request "/Welcome")}})
+  {:status 302 :headers {"Location" (mk-link request "/WelcomeDefault")}})
 
 
 (defn about-page [request]
@@ -89,25 +114,25 @@
   (let [title (:title (:path-params request))
         body (markup (fetch-content title))]
     {:status 200 :body (layout request title
-                         (hiccup.core/html [:div.container [:div.row [:div.span12 [:a.pull-right.btn.btn-primary.btn-mini {"href" (mk-link request (clojure.string/join ["/_edit/" title]))} "Edit"]
-                                                                      [:h1 title]
-                                                                      ]
-                                                            ]
-                                            [:div.row [:div.span12 body]]
-                                            ]))}))
+                               (hiccup.core/html [:div.container [:div.row [:div.span12 [:a.pull-right.btn.btn-primary.btn-mini {"href" (mk-link request (clojure.string/join ["/_edit/" title]))} "Edit"]
+                                                                            [:h1 title]
+                                                                            ]
+                                                                  ]
+                                                  [:div.row [:div.span12 body]]
+                                                  ]))}))
 
 
 (defn edit-page [request]
   (let [title (:title (:path-params request))]
     {:status 200 :body (layout request "Welcome"
-                         (hiccup.core/html [:div.container [:form {:method "POST" :action (mk-link request "/_save")}
-                                                            [:div.row [:div.span12 [:a.pull-right.btn.btn-mini {"href" (mk-link request (clojure.string/join ["/" title]))} "Cancel"]
-                                                                       "&nbsp;&nbsp;"
-                                                                       [:button.pull-right.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_edit/" title])} "Save"]]]
-                                                            [:div.row [:div.span12 [:input {:type "textfield" :name "title" :value title}]
-                                                                       ]]
-                                                            [:br ]
-                                                            [:div.row [:div.span12 [:textarea {:name "body" :rows 30 :style "width: 100%"} (fetch-content title)]]]]]))}))
+                               (hiccup.core/html [:div.container [:form {:method "POST" :action (mk-link request "/_save")}
+                                                                  [:div.row [:div.span12 [:a.pull-right.btn.btn-mini {"href" (mk-link request (clojure.string/join ["/" title]))} "Cancel"]
+                                                                             "&nbsp;&nbsp;"
+                                                                             [:button.pull-right.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_edit/" title])} "Save"]]]
+                                                                  [:div.row [:div.span12 [:input {:type "textfield" :name "title" :value title}]
+                                                                             ]]
+                                                                  [:br]
+                                                                  [:div.row [:div.span12 [:textarea {:name "body" :rows 30 :style "width: 100%"} (fetch-content title)]]]]]))}))
 
 (defn save-page [request]
   (let [title (get (:form-params request) "title")

@@ -5,8 +5,8 @@
 
 - collect all content as Markdown.
 
-TODO:
-- implment search on documents
+### TODO
+- search on documents
 - allow page attachements (inline images, or other files)
 - keep all wiki content in a git repo
 
@@ -22,6 +22,3 @@ documents.
 ### History
 
 This was originally a Noir project, and I have migrated to pedestal.io
-
-
-
