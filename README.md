@@ -3,13 +3,15 @@
 
 ### Notes is a simple wiki.  The idea is to
 
-- collect all content as Markdown.  
+- collect all content as Markdown.
+
+TODO:
 - implment search on documents
 - allow page attachements (inline images, or other files)
 - keep all wiki content in a git repo
 
 Together this should serve as a baseline place to keep simple
-engineering documents.  
+documents.
 
 ### Getting Started
 
