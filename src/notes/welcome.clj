@@ -7,19 +7,20 @@
 (require 'clojure.string)
 (require 'clojure.java.io)
 
-(def notes-dir)
+(def notes-dir nil)
 
 (defn notes-dir-set [dir]
   (def notes-dir dir)
   )
 
-(defn markup [text]
+
+(defn markup [request text]
   (clojure.string/replace (.markdownToHtml (PegDownProcessor.) (if text text ""))
-                          #"(?:[A-Z][a-z]+){2,}" "<a href=\"/$0\">$0</a>"))
+                          #"(?:[A-Z][a-z]+){2,}" (str "<a href=\"" (:context-path request) "/$0\">$0</a>")))
 (defn fetch-file [file]
   (let [
         env-dir (System/getenv "NOTES_GIT_DIR")
-        base-dir (new java.io.File (if notes-dir notes-dir (if env-dir env-dir "wiki/")))
+        base-dir (new java.io.File (if (not (nil? notes-dir)) notes-dir (if (not (nil? env-dir)) env-dir "wiki/")))
         pageFile (new java.io.File base-dir file)]
     (if (.exists pageFile) (do
                              (println (str "slurping " pageFile))
@@ -38,7 +39,7 @@
 (defn fetch-dir []
   (let [
         env-dir (System/getenv "NOTES_GIT_DIR")
-        base-dir (new java.io.File (if notes-dir notes-dir (if env-dir env-dir "wiki/")))
+        base-dir (new java.io.File (if (not (nil? notes-dir)) notes-dir (if (not (nil? env-dir)) env-dir "wiki/")))
         ]
     ; [example link](http://example.com/)
     (clojure.string/join (map file-to-wiki (.listFiles base-dir)))
@@ -51,7 +52,7 @@
 
 (defn save-content [title body]
   (let [env-dir (System/getenv "NOTES_GIT_DIR")
-        base-dir (new java.io.File (if notes-dir notes-dir (if env-dir env-dir "wiki/")))
+        base-dir (new java.io.File (if (not (nil? notes-dir)) notes-dir (if (not (nil? env-dir)) env-dir "wiki/")))
         disk-file (str title ".wd")
         pageFile (new java.io.File base-dir disk-file)
         ]
@@ -130,7 +131,7 @@
   (let [title (:title (:path-params request))
         content (fetch-content title)
         raw-body (if (= title "Foodage") (cal-count content) content)
-        body (markup raw-body)
+        body (markup request raw-body)
         ]
     {:status 200 :body (layout request title
                                (hiccup.core/html [:div.container [:div.row [:div.span12 [:a.pull-right.btn.btn-primary.btn-mini {"href" (mk-link request (clojure.string/join ["/_edit/" title]))} "Edit"]
