@@ -4,6 +4,8 @@
             [hiccup.core]
             )
   (:import org.pegdown.PegDownProcessor))
+(require 'clojure.string)
+(require 'clojure.java.io)
 
 (defn markup [text]
   (clojure.string/replace (.markdownToHtml (PegDownProcessor.) (if text text ""))
@@ -81,13 +83,30 @@
   {:status 302 :headers {"Location" (mk-link request "/Welcome")}})
 
 
+(defn cal-in-day [day]
+    (apply + (map #(Integer/parseInt %) (map #(second %1) (re-seq #"(?m)\s(\d+)\scal" day)))))
+
+(defn cal-day [day]
+  (let [lines (clojure.string/split day #"\n")]
+      (if (empty? day) ""
+      (str "## " (first lines) "Calories Total: " (cal-in-day day) "\n"
+           (clojure.string/join "\n" (rest lines) )))))
+
+(defn cal-count [text]
+  (let [days (clojure.string/split text #"(?m)^##\s")]
+  (clojure.string/join "\n" (map cal-day days))
+))
+
 (defn about-page [request]
   {:status 200 :body (layout request "About" (str "<div class='container'><div class='row'><div class='span12'>A simple wiki like system.   A mashup of Pedestal.io, Clojure.io, Git, Markdown, Wiki</div></div>
   <div class='row'><div class='span12'>Created by Bob Herrmann " "</div></div></div>"))})
 
 (defn view-page [request]
   (let [title (:title (:path-params request))
-        body (markup (fetch-content title))]
+        content (fetch-content title)
+        raw-body (if (= title "Foodage") (cal-count content) content)
+        body (markup raw-body)
+        ]
     {:status 200 :body (layout request title
                          (hiccup.core/html [:div.container [:div.row [:div.span12 [:a.pull-right.btn.btn-primary.btn-mini {"href" (mk-link request (clojure.string/join ["/_edit/" title]))} "Edit"]
                                                                       [:h1 title]

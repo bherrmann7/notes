@@ -3,6 +3,8 @@ tmp/
 logs/
 .DS_Store
 .idea
-deploy.*
 wiki/
 notes.iml
+.lein-repl-history
+.nrepl-port
+notes.war 

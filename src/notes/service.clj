@@ -5,6 +5,7 @@
             [io.pedestal.service.http.route.definition :refer [defroutes]]
             [ring.util.response :as ring-resp]
             [notes.welcome]
+            [notes.index]
             [notes.help]
 
             ))
@@ -18,6 +19,7 @@
      ["/_save" {:post notes.welcome/save-page}]
      ["/_basic" {:get notes.help/basic-page}]
      ["/_syntax" {:get notes.help/syntax-page}]
+     ["/_index" {:get notes.index/index}]
      ["/:title" {:get notes.welcome/view-page}]
      ]]])
 
@@ -48,4 +50,4 @@
               ;; to enable Tomcat)
               ;;::bootstrap/host "localhost"
               ::bootstrap/type :jetty
-              ::bootstrap/port 8080})
+              ::bootstrap/port 7777})
