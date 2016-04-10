@@ -20,6 +20,7 @@
      ["/_basic" {:get notes.help/basic-page}]
      ["/_syntax" {:get notes.help/syntax-page}]
      ["/_index" {:get notes.index/index}]
+     ["/_new" {:get notes.welcome/new-page}]
      ["/:title" {:get notes.welcome/view-page}]
      ]]])
 

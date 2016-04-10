@@ -7,7 +7,7 @@
 (require 'clojure.string)
 (require 'clojure.java.io)
 
-(def notes-dir nil)
+(def notes-dir "/Users/bob/notes-wiki")
 
 (defn notes-dir-set [dir]
   (def notes-dir dir)
@@ -28,27 +28,8 @@
                            (str "\nNo file found on disk.  Looked at: " pageFile)))
   )
 
-(defn file-to-wiki [file]
-  (let [m (.getName file)
-        no-wd (.replaceAll m ".wd" "")
-        ]
-    (str  no-wd "<br>")
-    )
-  )
-
-(defn fetch-dir []
-  (let [
-        env-dir (System/getenv "NOTES_GIT_DIR")
-        base-dir (new java.io.File (if (not (nil? notes-dir)) notes-dir (if (not (nil? env-dir)) env-dir "wiki/")))
-        ]
-    ; [example link](http://example.com/)
-    (clojure.string/join (map file-to-wiki (.listFiles base-dir)))
-    ))
-
 (defn fetch-content [title]
-  (if (= "Directory" title)
-    (fetch-dir)
-    (fetch-file (str title ".wd"))))
+  (fetch-file (str title ".wd")))
 
 (defn save-content [title body]
   (let [env-dir (System/getenv "NOTES_GIT_DIR")
@@ -65,17 +46,33 @@
   (clojure.string/join "" (cons (:context-path request) more))
   )
 
+(def resources-remote {
+                       :bootstrap-css "http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css"
+                       :bootstrap-js  "http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"
+                       :jsquery       "http://code.jquery.com/jquery.js"
+                       })
+
+
+(def resources-local {
+                      :bootstrap-css "/bootstrap-combined.min.css"
+                      :bootstrap-js  "/bootstrap.min.js"
+                      :jsquery       "/jquery.js"
+                      })
+
+(def resources-use resources-local)
+
 (defn layout [request title body]
   (hiccup.core/html
-    [:html [:head [:link {:href "http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" :rel "stylesheet" :media "screen"}]
+    [:html [:head
+            [:link {:href (mk-link request (:bootstrap-css resources-use)) :rel "stylesheet" :media "screen"}]
             [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
             "<style>
   body {
   padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
   }
   </style>"
-            ] [:body [:script {:src "http://code.jquery.com/jquery.js"}]
-               [:script {:src "http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"}]
+            ] [:body [:script {:src  (mk-link request (:jquery resources-use))}]
+               [:script {:src (:bootstrap-js  (mk-link request resources-use))}]
 
                "<div class='navbar navbar-inverse navbar-fixed-top'>
                <div class='navbar-inner'>
@@ -89,7 +86,7 @@
                <div class='nav-collapse collapse'>
                <ul class='nav'>
                <li class='active'><a href='" (mk-link request "/") "'>Home</a></li>
-               <li ><a href='" (mk-link request "/Directory") "'>Directory</a></li>
+               <li ><a href='" (mk-link request "/_index") "'>Directory</a></li>
                </ul>
                <ul class='nav pull-right'>
                 <li class='pull-right'><a href='" (mk-link request "/_basic") "'>Basic</a></li>
@@ -110,18 +107,18 @@
 
 
 (defn cal-in-day [day]
-    (apply + (map #(Integer/parseInt %) (map #(second %1) (re-seq #"(?m)\s(\d+)\scal" day)))))
+  (apply + (map #(Integer/parseInt %) (map #(second %1) (re-seq #"(?m)\s(\d+)\scal" day)))))
 
 (defn cal-day [day]
   (let [lines (clojure.string/split day #"\n")]
-      (if (empty? day) ""
-      (str "## " (first lines) "Calories Total: " (cal-in-day day) "\n"
-           (clojure.string/join "\n" (rest lines) )))))
+    (if (empty? day) ""
+                     (str "## " (first lines) "Calories Total: " (cal-in-day day) "\n"
+                          (clojure.string/join "\n" (rest lines))))))
 
 (defn cal-count [text]
   (let [days (clojure.string/split text #"(?m)^##\s")]
-  (clojure.string/join "\n" (map cal-day days))
-))
+    (clojure.string/join "\n" (map cal-day days))
+    ))
 
 (defn about-page [request]
   {:status 200 :body (layout request "About" (str "<div class='container'><div class='row'><div class='span12'>A simple wiki like system.   A mashup of Pedestal.io, Clojure.io, Git, Markdown, Wiki</div></div>
@@ -133,26 +130,45 @@
         raw-body (if (= title "Foodage") (cal-count content) content)
         body (markup request raw-body)
         ]
-    {:status 200 :body (layout request title
-                               (hiccup.core/html [:div.container [:div.row [:div.span12 [:a.pull-right.btn.btn-primary.btn-mini {"href" (mk-link request (clojure.string/join ["/_edit/" title]))} "Edit"]
-                                                                            [:h1 title]
-                                                                            ]
-                                                                  ]
-                                                  [:div.row [:div.span12 body]]
-                                                  ]))}))
+    {:status 200
+     :body   (layout request title
+                     (hiccup.core/html
+                       [:div.container
+                        [:div.row [:div.span12
+                                   [:div.pull-right
+                                    [:a.btn.btn-primary.btn-mini {"href" (mk-link request (clojure.string/join ["/_edit/" title]))} "Edit"]
+                                    "&nbsp;&nbsp;&nbsp;"
+                                    [:a.btn.btn-primary.btn-mini {"href" (mk-link request (clojure.string/join ["/_new"]))} "New"]
+                                    ]
+                                   [:h1 title]
+                                   ]
+                         ]
+                        [:div.row [:div.span12 body]]
+                        ]))}))
+
+(defn edit-basics [request title body]
+  {:status 200 :body (layout
+                       request "Welcome"
+                       (hiccup.core/html
+                         [:div.container
+                          [:form {:method "POST" :action (mk-link request "/_save")}
+                           [:div.row [:div.span12
+                                      [:div.pull-right
+                                      [:a.btn.btn-mini {"href" (mk-link request (clojure.string/join ["/" title]))} "Cancel"]
+                                      "&nbsp;&nbsp;"
+                                      [:button.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_edit/" title])} "Save"]]]
+                            ]
+                           [:div.row [:div.span12 [:input {:type "textfield" :name "title" :value title}]
+                                      ]]
+                           [:br]
+                           [:div.row [:div.span12 [:textarea {:name "body" :rows 30 :style "width: 100%"} body]]]]]))})
 
 
 (defn edit-page [request]
-  (let [title (:title (:path-params request))]
-    {:status 200 :body (layout request "Welcome"
-                               (hiccup.core/html [:div.container [:form {:method "POST" :action (mk-link request "/_save")}
-                                                                  [:div.row [:div.span12 [:a.pull-right.btn.btn-mini {"href" (mk-link request (clojure.string/join ["/" title]))} "Cancel"]
-                                                                             "&nbsp;&nbsp;"
-                                                                             [:button.pull-right.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_edit/" title])} "Save"]]]
-                                                                  [:div.row [:div.span12 [:input {:type "textfield" :name "title" :value title}]
-                                                                             ]]
-                                                                  [:br]
-                                                                  [:div.row [:div.span12 [:textarea {:name "body" :rows 30 :style "width: 100%"} (fetch-content title)]]]]]))}))
+  (let [title (:title (:path-params request))
+        body (fetch-content title)]
+    (edit-basics request title body)))
+
 
 (defn save-page [request]
   (let [title (get (:form-params request) "title")
@@ -162,3 +178,6 @@
     ))
 
 
+(defn new-page [request]
+  (edit-basics request "WikiPageTitle" "BODY")
+  )

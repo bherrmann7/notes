@@ -6,21 +6,36 @@
             )
   (:import org.pegdown.PegDownProcessor))
 
-(defn html-dir
-  ( [dir] (html-dir (io/file dir) ""))
-  ( [dir html-so-far]
-    (let [dirs (filter #(complement (.isDirectory %)) (.listFiles dir) )
-          ]
-    (into [] (flatten [ :div.span1 "Files are "  (map  #(vector :br (.getName %)) dirs ) ]))
-    )))
 
-(defn index3 [request]
-  {:status 300 :body "boo bo you" })
+(defn file-to-wiki [file]
+  (let [m (.getName file)
+        no-wd (.replaceAll m ".wd" "")
+        ]
+    (str no-wd "<br>")
+    )
+  )
+
+(defn fetch-dir [request]
+  (let [
+        env-dir (System/getenv "NOTES_GIT_DIR")
+        base-dir (new java.io.File (if (not (nil? notes.welcome/notes-dir)) notes.welcome/notes-dir (if (not (nil? env-dir)) env-dir "wiki/")))
+        ]
+    ; [example link](http://example.com/)
+    (notes.welcome/markup request
+                          (clojure.string/join (sort (map file-to-wiki (.listFiles base-dir)))))
+    ))
 
 (defn index [request]
-  {:status 300 :body (notes.welcome/layout request "tinker do"
+  {:status 300 :body
+           (notes.welcome/layout
+               request "WikiPageTitle"
+             (hiccup.core/html
+               [:div.container
+                [:div.row [:div.span12
+                           [:div.pull-right
+                            [:a.btn.btn-primary.btn-mini {"href" (notes.welcome/mk-link request (clojure.string/join ["/_new"]))} "New"]
+                            ]]]
 
-                                           (hiccup.core/html [:div.container
-
-                                                                         (html-dir (System/getenv "NOTES_GIT_DIR")) ]
-                                                                          ))})
+                (fetch-dir request)
+                ]
+               ))})
