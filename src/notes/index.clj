@@ -16,13 +16,9 @@
   )
 
 (defn fetch-dir [request]
-  (let [
-        env-dir (System/getenv "NOTES_GIT_DIR")
-        base-dir (new java.io.File (if (not (nil? notes.welcome/notes-dir)) notes.welcome/notes-dir (if (not (nil? env-dir)) env-dir "wiki/")))
-        ]
     ; [example link](http://example.com/)
     (notes.welcome/markup request
-                          (clojure.string/join (sort (map file-to-wiki (.listFiles base-dir)))))
+                          (clojure.string/join (sort (map file-to-wiki (.listFiles (new java.io.File (notes.welcome/get-notes-dir))))))
     ))
 
 (defn index [request]

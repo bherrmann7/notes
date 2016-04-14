@@ -7,6 +7,7 @@
             [notes.welcome]
             [notes.index]
             [notes.help]
+            [notes.file]
 
             ))
 
@@ -16,12 +17,14 @@
      ^:interceptors [(body-params/body-params) bootstrap/html-body]
      ["/_about" {:get notes.welcome/about-page}]
      ["/_edit/:title" {:get notes.welcome/edit-page}]
+     ["/_delete/:title" {:get notes.welcome/delete-page}]
      ["/_save" {:post notes.welcome/save-page}]
      ["/_basic" {:get notes.help/basic-page}]
      ["/_syntax" {:get notes.help/syntax-page}]
      ["/_index" {:get notes.index/index}]
      ["/_new" {:get notes.welcome/new-page}]
      ["/:title" {:get notes.welcome/view-page}]
+     ["/_res/:file" {:get notes.file/view-file}]
      ]]])
 
 ;; You can use this fn or a per-request fn via io.pedestal.service.http.route/url-for

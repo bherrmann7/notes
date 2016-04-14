@@ -7,21 +7,36 @@
 (require 'clojure.string)
 (require 'clojure.java.io)
 
-(def notes-dir "/Users/bob/notes-wiki")
+(def not-nil? (complement nil?))
 
-(defn notes-dir-set [dir]
-  (def notes-dir dir)
+(defn is-dir [f]
+  (.exists (new java.io.File f))
   )
 
+(defn choose-notes-dir []
+  (if (not-nil? (System/getenv "NOTES_GIT_DIR"))
+    (System/getenv "NOTES_GIT_DIR")
+    (if (is-dir "/home/bob/notes-wiki")
+      "/home/bob/notes-wiki"
+      (if (is-dir "/Users/bob/notes-wiki")
+        "/Users/bob/notes-wiki"
+        (throw (new RuntimeException "Can not find notes-dir"))
+        ))))
+
+(def notes-dir-active (atom nil))
+
+(defn get-notes-dir []
+  (if (nil? @notes-dir-active)
+    (reset! notes-dir-active (choose-notes-dir)))
+  @notes-dir-active
+  )
 
 (defn markup [request text]
   (clojure.string/replace (.markdownToHtml (PegDownProcessor.) (if text text ""))
                           #"(?:[A-Z][a-z]+){2,}" (str "<a href=\"" (:context-path request) "/$0\">$0</a>")))
 (defn fetch-file [file]
   (let [
-        env-dir (System/getenv "NOTES_GIT_DIR")
-        base-dir (new java.io.File (if (not (nil? notes-dir)) notes-dir (if (not (nil? env-dir)) env-dir "wiki/")))
-        pageFile (new java.io.File base-dir file)]
+        pageFile (new java.io.File (get-notes-dir) file)]
     (if (.exists pageFile) (do
                              (println (str "slurping " pageFile))
                              (slurp pageFile))
@@ -32,13 +47,9 @@
   (fetch-file (str title ".wd")))
 
 (defn save-content [title body]
-  (let [env-dir (System/getenv "NOTES_GIT_DIR")
-        base-dir (new java.io.File (if (not (nil? notes-dir)) notes-dir (if (not (nil? env-dir)) env-dir "wiki/")))
-        disk-file (str title ".wd")
-        pageFile (new java.io.File base-dir disk-file)
+  (let [disk-file (str title ".wd")
+        pageFile (new java.io.File (get-notes-dir) disk-file)
         ]
-    (if-not (.exists base-dir) (.mkdirs base-dir))
-    (println (str "spitting " pageFile))
     (spit pageFile body)
     ))
 
@@ -71,8 +82,8 @@
   padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
   }
   </style>"
-            ] [:body [:script {:src  (mk-link request (:jquery resources-use))}]
-               [:script {:src (:bootstrap-js  (mk-link request resources-use))}]
+            ] [:body [:script {:src (mk-link request (:jquery resources-use))}]
+               [:script {:src (:bootstrap-js (mk-link request resources-use))}]
 
                "<div class='navbar navbar-inverse navbar-fixed-top'>
                <div class='navbar-inner'>
@@ -154,9 +165,11 @@
                           [:form {:method "POST" :action (mk-link request "/_save")}
                            [:div.row [:div.span12
                                       [:div.pull-right
-                                      [:a.btn.btn-mini {"href" (mk-link request (clojure.string/join ["/" title]))} "Cancel"]
-                                      "&nbsp;&nbsp;"
-                                      [:button.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_edit/" title])} "Save"]]]
+                                       [:a.btn.btn-mini.btn-danger {"href" (mk-link request (clojure.string/join ["/_delete/" title]))} "Delete"]
+                                       "&nbsp;&nbsp;&nbsp;&nbsp;"
+                                       [:a.btn.btn-mini {"href" (mk-link request (clojure.string/join ["/" title]))} "Cancel"]
+                                       "&nbsp;&nbsp;"
+                                       [:button.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_edit/" title])} "Save"]]]
                             ]
                            [:div.row [:div.span12 [:input {:type "textfield" :name "title" :value title}]
                                       ]]
@@ -177,7 +190,19 @@
     {:status 302 :headers {"Location" (mk-link request "/" title)}}
     ))
 
+(defn delete-page [request]
+  (let [title (:title (:path-params request))
+        pageFile (new java.io.File (get-notes-dir) (str title ".wd"))]
+    (.delete pageFile)
+    ; Where do we go after delete?  Directory?
+    {:status 302 :headers {"Location" (mk-link request "/_index?" (System/currentTimeMillis) )}})
+  )
+
 
 (defn new-page [request]
   (edit-basics request "WikiPageTitle" "BODY")
+  )
+
+(defn serv-resource [resource]
+
   )
