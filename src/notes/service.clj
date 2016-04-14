@@ -24,6 +24,7 @@
      ["/_index" {:get notes.index/index}]
      ["/_new" {:get notes.welcome/new-page}]
      ["/:title" {:get notes.welcome/view-page}]
+     ["/_upload" {:get notes.file/upload-file}]
      ["/_res/:file" {:get notes.file/view-file}]
      ]]])
 

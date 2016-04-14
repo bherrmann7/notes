@@ -11,9 +11,11 @@
   (let [m (.getName file)
         no-wd (.replaceAll m ".wd" "")
         ]
-    (str no-wd "<br>")
+      (if (= "res" m )
+        ""
+        (str no-wd "<br>")
     )
-  )
+  ))
 
 (defn fetch-dir [request]
     ; [example link](http://example.com/)

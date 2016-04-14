@@ -157,24 +157,50 @@
                         [:div.row [:div.span12 body]]
                         ]))}))
 
+
+(defn file-block [request images]
+  [:div.span4
+   [:br]
+   [:br]
+
+   [:div.form-group
+    [:form.form-inline {:method "post" :action (mk-link request "/_upload") :enctype "multipart/form-data"}
+     [:input.form-control {:type "file" :name "file" :id "file" :placeholder "YourImage.png"}]
+     [:button.btn.btn-default {:type "submit"} "Upload"]
+     ]
+    ]
+
+   [:br]
+
+   [:div.well
+    (map #(vector :div [:a {:href (mk-link request "/res/" %)} %] [:br]) images)
+    ]
+   ]
+  )
+
+
 (defn edit-basics [request title body]
-  {:status 200 :body (layout
-                       request "Welcome"
-                       (hiccup.core/html
-                         [:div.container
-                          [:form {:method "POST" :action (mk-link request "/_save")}
-                           [:div.row [:div.span12
-                                      [:div.pull-right
-                                       [:a.btn.btn-mini.btn-danger {"href" (mk-link request (clojure.string/join ["/_delete/" title]))} "Delete"]
-                                       "&nbsp;&nbsp;&nbsp;&nbsp;"
-                                       [:a.btn.btn-mini {"href" (mk-link request (clojure.string/join ["/" title]))} "Cancel"]
-                                       "&nbsp;&nbsp;"
-                                       [:button.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_edit/" title])} "Save"]]]
-                            ]
-                           [:div.row [:div.span12 [:input {:type "textfield" :name "title" :value title}]
-                                      ]]
-                           [:br]
-                           [:div.row [:div.span12 [:textarea {:name "body" :rows 30 :style "width: 100%"} body]]]]]))})
+  (let [resources (.listFiles (java.io.File. (str (get-notes-dir) "/_res/")))]
+    {:status 200 :body (layout
+                         request "Welcome"
+                         (hiccup.core/html
+                           [:div.container
+                            [:div.row [:div.span8
+                                       [:form {:method "POST" :action (mk-link request "/_save")}
+                                        [:input {:type "textfield" :name "title" :value title}] "&nbsp;< - - Use a WikiWord"
+                                        [:div.pull-right
+                                         [:a.btn.btn-mini.btn-danger {"href" (mk-link request (clojure.string/join ["/_delete/" title]))} "Delete"]
+                                         "&nbsp;&nbsp;&nbsp;&nbsp;"
+                                         [:a.btn.btn-mini {"href" (mk-link request (clojure.string/join ["/" title]))} "Cancel"]
+                                         "&nbsp;&nbsp;"
+                                         [:button.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_edit/" title])} "Save"]]
+                                        ]
+                                       [:br]
+                                       [:textarea {:name "body" :rows 30 :style "width: 100%"} body]]
+
+                             (file-block request resources)
+
+                             ]]))}))
 
 
 (defn edit-page [request]
@@ -195,14 +221,10 @@
         pageFile (new java.io.File (get-notes-dir) (str title ".wd"))]
     (.delete pageFile)
     ; Where do we go after delete?  Directory?
-    {:status 302 :headers {"Location" (mk-link request "/_index?" (System/currentTimeMillis) )}})
+    {:status 302 :headers {"Location" (mk-link request "/_index?" (System/currentTimeMillis))}})
   )
 
 
 (defn new-page [request]
   (edit-basics request "WikiPageTitle" "BODY")
-  )
-
-(defn serv-resource [resource]
-
   )
