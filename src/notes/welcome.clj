@@ -173,14 +173,14 @@
    [:br]
 
    [:div.well
-    (map #(vector :div [:a {:href (mk-link request "/res/" %)} %] [:br]) images)
+    (map #(vector :div [:a {:href (mk-link request "/_res/" %)} %] [:br]) images)
     ]
    ]
   )
 
 
 (defn edit-basics [request title body]
-  (let [resources (.listFiles (java.io.File. (str (get-notes-dir) "/_res/")))]
+  (let [resources (map #(.getName %) (.listFiles (java.io.File. (str (get-notes-dir) "/_res/"))))]
     {:status 200 :body (layout
                          request "Welcome"
                          (hiccup.core/html
@@ -190,13 +190,14 @@
                                         [:input {:type "textfield" :name "title" :value title}] "&nbsp;< - - Use a WikiWord"
                                         [:div.pull-right
                                          [:a.btn.btn-mini.btn-danger {"href" (mk-link request (clojure.string/join ["/_delete/" title]))} "Delete"]
-                                         "&nbsp;&nbsp;&nbsp;&nbsp;"
+                                         "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                                         "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
                                          [:a.btn.btn-mini {"href" (mk-link request (clojure.string/join ["/" title]))} "Cancel"]
                                          "&nbsp;&nbsp;"
-                                         [:button.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_edit/" title])} "Save"]]
-                                        ]
-                                       [:br]
-                                       [:textarea {:name "body" :rows 30 :style "width: 100%"} body]]
+                                         [:button.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_save/" title])} "Save"]]
+                                        [:br] [:br]
+                                        [:textarea {:name "body" :rows 30 :style "width: 100%"} body]]
+                                       ]
 
                              (file-block request resources)
 
