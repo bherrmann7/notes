@@ -2,41 +2,21 @@
   (:require [clojure.java.io]
             [clojure.java.shell :as shell]
             [hiccup.core]
+            [notes.file]
+            [notes.utils :as nu]
             )
+
   (:import org.pegdown.PegDownProcessor))
 (require 'clojure.string)
 (require 'clojure.java.io)
 
-(def not-nil? (complement nil?))
-
-(defn is-dir [f]
-  (.exists (new java.io.File f))
-  )
-
-(defn choose-notes-dir []
-  (if (not-nil? (System/getenv "NOTES_GIT_DIR"))
-    (System/getenv "NOTES_GIT_DIR")
-    (if (is-dir "/home/bob/notes-wiki")
-      "/home/bob/notes-wiki"
-      (if (is-dir "/Users/bob/notes-wiki")
-        "/Users/bob/notes-wiki"
-        (throw (new RuntimeException "Can not find notes-dir"))
-        ))))
-
-(def notes-dir-active (atom nil))
-
-(defn get-notes-dir []
-  (if (nil? @notes-dir-active)
-    (reset! notes-dir-active (choose-notes-dir)))
-  @notes-dir-active
-  )
 
 (defn markup [request text]
   (clojure.string/replace (.markdownToHtml (PegDownProcessor.) (if text text ""))
                           #"(?:[A-Z][a-z]+){2,}" (str "<a href=\"" (:context-path request) "/$0\">$0</a>")))
 (defn fetch-file [file]
   (let [
-        pageFile (new java.io.File (get-notes-dir) file)]
+        pageFile (new java.io.File (notes.file/get-notes-dir) file)]
     (if (.exists pageFile) (do
                              (println (str "slurping " pageFile))
                              (slurp pageFile))
@@ -48,14 +28,11 @@
 
 (defn save-content [title body]
   (let [disk-file (str title ".wd")
-        pageFile (new java.io.File (get-notes-dir) disk-file)
+        pageFile (new java.io.File (notes.file/get-notes-dir) disk-file)
         ]
     (spit pageFile body)
     ))
 
-(defn mk-link [request & more]
-  (clojure.string/join "" (cons (:context-path request) more))
-  )
 
 (def resources-remote {
                        :bootstrap-css "http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css"
@@ -75,15 +52,15 @@
 (defn layout [request title body]
   (hiccup.core/html
     [:html [:head
-            [:link {:href (mk-link request (:bootstrap-css resources-use)) :rel "stylesheet" :media "screen"}]
+            [:link {:href (nu/mk-link request (:bootstrap-css resources-use)) :rel "stylesheet" :media "screen"}]
             [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
             "<style>
   body {
   padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
   }
   </style>"
-            ] [:body [:script {:src (mk-link request (:jquery resources-use))}]
-               [:script {:src (:bootstrap-js (mk-link request resources-use))}]
+            ] [:body [:script {:src (nu/mk-link request (:jquery resources-use))}]
+               [:script {:src (:bootstrap-js (nu/mk-link request resources-use))}]
 
                "<div class='navbar navbar-inverse navbar-fixed-top'>
                <div class='navbar-inner'>
@@ -93,16 +70,16 @@
                <span class='icon-bar'></span>
                <span class='icon-bar'></span>
                </button>
-               <a class='brand' href='" (mk-link request "/") "'>Notes</a>
+               <a class='brand' href='" (nu/mk-link request "/") "'>Notes</a>
                <div class='nav-collapse collapse'>
                <ul class='nav'>
-               <li class='active'><a href='" (mk-link request "/") "'>Home</a></li>
-               <li ><a href='" (mk-link request "/_index") "'>Directory</a></li>
+               <li class='active'><a href='" (nu/mk-link request "/") "'>Home</a></li>
+               <li ><a href='" (nu/mk-link request "/_index") "'>Directory</a></li>
                </ul>
                <ul class='nav pull-right'>
-                <li class='pull-right'><a href='" (mk-link request "/_basic") "'>Basic</a></li>
-                <li class='pull-right'><a href='" (mk-link request "/_syntax") "'>Syntax</a></li>
-                <li class='pull-right'><a href='" (mk-link request "/_about") "'>About</a></li>
+                <li class='pull-right'><a href='" (nu/mk-link request "/_basic") "'>Basic</a></li>
+                <li class='pull-right'><a href='" (nu/mk-link request "/_syntax") "'>Syntax</a></li>
+                <li class='pull-right'><a href='" (nu/mk-link request "/_about") "'>About</a></li>
                </ul>
                </div><!--/.nav-collapse -->
                </div>
@@ -114,7 +91,7 @@
 
 (defn welcome [request]
   (clojure.pprint/pprint request)
-  {:status 302 :headers {"Location" (mk-link request "/WelcomeDefault")}})
+  {:status 302 :headers {"Location" (nu/mk-link request "/WelcomeDefault")}})
 
 
 (defn cal-in-day [day]
@@ -147,9 +124,9 @@
                        [:div.container
                         [:div.row [:div.span12
                                    [:div.pull-right
-                                    [:a.btn.btn-primary.btn-mini {"href" (mk-link request (clojure.string/join ["/_edit/" title]))} "Edit"]
+                                    [:a.btn.btn-primary.btn-mini {"href" (nu/mk-link request (clojure.string/join ["/_edit/" title]))} "Edit"]
                                     "&nbsp;&nbsp;&nbsp;"
-                                    [:a.btn.btn-primary.btn-mini {"href" (mk-link request (clojure.string/join ["/_new"]))} "New"]
+                                    [:a.btn.btn-primary.btn-mini {"href" (nu/mk-link request (clojure.string/join ["/_new"]))} "New"]
                                     ]
                                    [:h1 title]
                                    ]
@@ -158,48 +135,49 @@
                         ]))}))
 
 
-(defn file-block [request images]
+(defn file-block [request images title]
   [:div.span4
    [:br]
    [:br]
 
    [:div.form-group
-    [:form.form-inline {:method "post" :action (mk-link request "/_upload") :enctype "multipart/form-data"}
+    [:form.form-inline {:method "post" :action (nu/mk-link request "/_upload") :enctype "multipart/form-data"}
      [:input.form-control {:type "file" :name "file" :id "file" :placeholder "YourImage.png"}]
      [:button.btn.btn-default {:type "submit"} "Upload"]
+     [:input {:type "hidden" :name "origin-title" :value title}]
      ]
     ]
 
    [:br]
 
    [:div.well
-    (map #(vector :div [:a {:href (mk-link request "/_res/" %)} %] [:br]) images)
+    (map #(vector :div [:a {:href (nu/mk-link request "/_res/" %)} %] [:br]) images)
     ]
    ]
   )
 
 
 (defn edit-basics [request title body]
-  (let [resources (map #(.getName %) (.listFiles (java.io.File. (str (get-notes-dir) "/_res/"))))]
+  (let [resources (map #(.getName %) (.listFiles (java.io.File. (str (notes.file/get-notes-dir) "/_res/"))))]
     {:status 200 :body (layout
                          request "Welcome"
                          (hiccup.core/html
                            [:div.container
                             [:div.row [:div.span8
-                                       [:form {:method "POST" :action (mk-link request "/_save")}
+                                       [:form {:method "POST" :action (nu/mk-link request "/_save")}
                                         [:input {:type "textfield" :name "title" :value title}] "&nbsp;< - - Use a WikiWord"
                                         [:div.pull-right
-                                         [:a.btn.btn-mini.btn-danger {"href" (mk-link request (clojure.string/join ["/_delete/" title]))} "Delete"]
+                                         [:a.btn.btn-mini.btn-danger {"href" (nu/mk-link request (clojure.string/join ["/_delete/" title]))} "Delete"]
                                          "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
                                          "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
-                                         [:a.btn.btn-mini {"href" (mk-link request (clojure.string/join ["/" title]))} "Cancel"]
+                                         [:a.btn.btn-mini {"href" (nu/mk-link request (clojure.string/join ["/" title]))} "Cancel"]
                                          "&nbsp;&nbsp;"
                                          [:button.btn.btn-primary.btn-mini {"href" (clojure.string/join ["/_save/" title])} "Save"]]
                                         [:br] [:br]
                                         [:textarea {:name "body" :rows 30 :style "width: 100%"} body]]
                                        ]
 
-                             (file-block request resources)
+                             (file-block request resources title)
 
                              ]]))}))
 
@@ -214,15 +192,15 @@
   (let [title (get (:form-params request) "title")
         body (get (:form-params request) "body")]
     (save-content title body)
-    {:status 302 :headers {"Location" (mk-link request "/" title)}}
+    {:status 302 :headers {"Location" (nu/mk-link request "/" title)}}
     ))
 
 (defn delete-page [request]
   (let [title (:title (:path-params request))
-        pageFile (new java.io.File (get-notes-dir) (str title ".wd"))]
+        pageFile (new java.io.File (notes.file/get-notes-dir) (str title ".wd"))]
     (.delete pageFile)
     ; Where do we go after delete?  Directory?
-    {:status 302 :headers {"Location" (mk-link request "/_index?" (System/currentTimeMillis))}})
+    {:status 302 :headers {"Location" (nu/mk-link request "/_index?" (System/currentTimeMillis))}})
   )
 
 

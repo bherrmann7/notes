@@ -2,6 +2,7 @@
   (:require [io.pedestal.service.http :as bootstrap]
             [io.pedestal.service.http.route :as route]
             [io.pedestal.service.http.body-params :as body-params]
+            [io.pedestal.service.http.ring-middlewares :as middlewares]
             [io.pedestal.service.http.route.definition :refer [defroutes]]
             [ring.util.response :as ring-resp]
             [notes.welcome]
@@ -14,7 +15,7 @@
 (defroutes routes
   [[["/" {:get notes.welcome/welcome}
      ;; Set default interceptors for /about and any other paths under /
-     ^:interceptors [(body-params/body-params) bootstrap/html-body]
+     ^:interceptors [(body-params/body-params) bootstrap/html-body  (middlewares/multipart-params)  ]
      ["/_about" {:get notes.welcome/about-page}]
      ["/_edit/:title" {:get notes.welcome/edit-page}]
      ["/_delete/:title" {:get notes.welcome/delete-page}]
@@ -24,7 +25,7 @@
      ["/_index" {:get notes.index/index}]
      ["/_new" {:get notes.welcome/new-page}]
      ["/:title" {:get notes.welcome/view-page}]
-     ["/_upload" {:get notes.file/upload-file}]
+     ["/_upload" {:post notes.file/upload-file} ]
      ["/_res/:file" {:get notes.file/view-file}]
      ]]])
 
