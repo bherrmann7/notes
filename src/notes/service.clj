@@ -18,6 +18,7 @@
      ^:interceptors [(body-params/body-params) bootstrap/html-body  (middlewares/multipart-params)  ]
      ["/_about" {:get notes.welcome/about-page}]
      ["/_edit/:title" {:get notes.welcome/edit-page}]
+     ["/_print/:title" {:get notes.welcome/print-page}]
      ["/_delete/:title" {:get notes.welcome/delete-page}]
      ["/_save" {:post notes.welcome/save-page}]
      ["/_basic" {:get notes.help/basic-page}]
