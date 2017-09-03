@@ -127,6 +127,8 @@
                                     [:a.btn.btn-primary.btn-mini {"href" (nu/mk-link request (clojure.string/join ["/_edit/" title]))} "Edit"]
                                     "&nbsp;&nbsp;&nbsp;"
                                     [:a.btn.btn-primary.btn-mini {"href" (nu/mk-link request (clojure.string/join ["/_new"]))} "New"]
+                                    "&nbsp;&nbsp;&nbsp;"
+                                    [:a.btn.btn-primary.btn-mini {"href" (nu/mk-link request (clojure.string/join ["/_print/" title]))} "Print"]
                                     ]
                                    [:h1 title]
                                    ]
@@ -134,6 +136,18 @@
                         [:div.row [:div.span12 body]]
                         ]))}))
 
+(defn print-page [request]
+  (let [title (:title (:path-params request))
+        content (fetch-content title)
+        raw-body (if (= title "Foodage") (cal-count content) content)
+        body (markup request raw-body)
+        ]
+    {:status 200
+     :body
+                     (hiccup.core/html
+                       [:div.container
+                        [:div.row [:div.span12 body]]
+                        ])}))
 
 (defn file-block [request images title]
   [:div.span4
