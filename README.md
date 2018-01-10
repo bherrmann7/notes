@@ -21,4 +21,4 @@ documents.
 
 ### History
 
-This was originally a Noir project, and I have migrated to pedestal.io
+This was originally a Noir project, now migrated to pedestal.io
